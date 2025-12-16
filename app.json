@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "AryVerse",
+    "slug": "aryverse",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "icon": "./src/images/icon.png",
+    "splash": {
+      "image": "./src/images/android-icon-monochrome.png",
+      "backgroundColor": "#0a0e27",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aryverse.app",
+      "icon": "./src/images/icon.png"
+    },
+    "android": {
+      "package": "com.aryverse.app",
+      "icon": "./src/images/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/images/android-icon-monochrome.png",
+        "backgroundColor": "#0a0e27"
+      }
+    },
+    "web": {}
+  }
+}
