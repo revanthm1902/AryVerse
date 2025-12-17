@@ -12,10 +12,8 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
   withSpring,
   interpolate,
-  Easing,
 } from 'react-native-reanimated';
 
 // Video placeholder data - 8 items for the carousel
@@ -31,9 +29,10 @@ const CAROUSEL_ITEMS = [
 ];
 
 const TOTAL_ITEMS = CAROUSEL_ITEMS.length;
+const AUTO_ROTATE_INTERVAL = 3000; // 3 seconds
 
-// 3D Carousel Item Component
-const CarouselItem = ({ item, index, currentIndex, cardWidth, cardHeight, screenWidth }) => {
+// 3D Oval Carousel Item Component
+const CarouselItem = ({ item, index, currentIndex, cardWidth, cardHeight, screenWidth, radiusX, radiusY }) => {
   const animatedValue = useSharedValue(0);
   
   useEffect(() => {
@@ -44,62 +43,46 @@ const CarouselItem = ({ item, index, currentIndex, cardWidth, cardHeight, screen
   }, [currentIndex]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    // Calculate position relative to current index
-    let relativePosition = index - animatedValue.value;
+    // Calculate angle for this item in the oval
+    const anglePerItem = (2 * Math.PI) / TOTAL_ITEMS;
+    const baseAngle = index * anglePerItem;
+    const rotationOffset = animatedValue.value * anglePerItem;
+    const angle = baseAngle - rotationOffset;
     
-    // Wrap around for circular carousel
-    if (relativePosition > TOTAL_ITEMS / 2) relativePosition -= TOTAL_ITEMS;
-    if (relativePosition < -TOTAL_ITEMS / 2) relativePosition += TOTAL_ITEMS;
-
-    // Only show items in positions -1, 0, 1 (left, center, right)
-    const isVisible = Math.abs(relativePosition) <= 1.5;
+    // Calculate position on oval (ellipse)
+    const translateX = Math.sin(angle) * radiusX;
+    const translateY = Math.cos(angle) * radiusY * 0.3; // Flatten the Y for perspective
     
-    // Calculate transformations
-    const translateX = interpolate(
-      relativePosition,
-      [-1, 0, 1],
-      [-cardWidth * 0.85, 0, cardWidth * 0.85]
-    );
-
-    const translateZ = interpolate(
-      relativePosition,
-      [-1, 0, 1],
-      [-100, 0, -100]
-    );
-
-    const rotateY = interpolate(
-      relativePosition,
-      [-1, 0, 1],
-      [35, 0, -35]
-    );
-
-    const scale = interpolate(
-      relativePosition,
-      [-1, 0, 1],
-      [0.75, 1, 0.75]
-    );
-
-    const opacity = interpolate(
-      relativePosition,
-      [-1.5, -1, 0, 1, 1.5],
-      [0, 0.7, 1, 0.7, 0]
-    );
-
-    const zIndex = interpolate(
-      Math.abs(relativePosition),
-      [0, 1, 2],
-      [10, 5, 0]
-    );
+    // Calculate depth (z-position) based on angle
+    // Items at front (angle near 0) are closer, items at back are further
+    const depth = Math.cos(angle); // -1 (back) to 1 (front)
+    
+    // Scale based on depth - front items larger, back items smaller
+    const scale = interpolate(depth, [-1, 0, 1], [0.4, 0.65, 1]);
+    
+    // Opacity - front items fully visible, back items faded
+    const opacity = interpolate(depth, [-1, -0.3, 0.3, 1], [0.25, 0.4, 0.7, 1]);
+    
+    // Z-index based on depth
+    const zIndex = Math.round(interpolate(depth, [-1, 1], [0, 10]));
+    
+    // Rotation for 3D effect - items rotate to face the viewer
+    const rotateY = interpolate(Math.sin(angle), [-1, 0, 1], [60, 0, -60]);
+    
+    // Highlight effect for front 3 items (center and immediate left/right)
+    const isHighlighted = depth > 0.5;
+    const highlightScale = isHighlighted ? 1 : scale;
 
     return {
       transform: [
-        { perspective: 1000 },
+        { perspective: 1200 },
         { translateX },
+        { translateY: translateY - 20 }, // Shift up slightly
         { rotateY: `${rotateY}deg` },
-        { scale },
+        { scale: highlightScale },
       ],
-      opacity: isVisible ? opacity : 0,
-      zIndex: Math.round(zIndex),
+      opacity,
+      zIndex,
     };
   });
 
@@ -112,6 +95,8 @@ const CarouselItem = ({ item, index, currentIndex, cardWidth, cardHeight, screen
           height: cardHeight,
           position: 'absolute',
           left: screenWidth / 2 - cardWidth / 2,
+          top: '50%',
+          marginTop: -cardHeight / 2,
         },
         animatedStyle,
       ]}
@@ -143,15 +128,35 @@ const CarouselItem = ({ item, index, currentIndex, cardWidth, cardHeight, screen
   );
 };
 
+// Oval Ring Track Component
+const OvalRingTrack = ({ radiusX, radiusY, screenWidth }) => {
+  return (
+    <View style={[styles.ovalTrack, {
+      width: radiusX * 2 + 40,
+      height: radiusY * 0.6 + 40,
+      borderRadius: radiusX,
+      left: screenWidth / 2 - radiusX - 20,
+      top: '50%',
+      marginTop: -(radiusY * 0.3 + 20),
+    }]} />
+  );
+};
+
 export default function LearningScreen({ navigation }) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false); // Track if video is playing
   const panX = useRef(0);
+  const autoRotateTimer = useRef(null);
 
   // Responsive scaling
   const scale = Math.min(screenWidth / 800, screenHeight / 400);
-  const cardWidth = Math.min(screenWidth * 0.35, 280);
-  const cardHeight = cardWidth * 0.7;
+  const cardWidth = Math.min(screenWidth * 0.28, 220);
+  const cardHeight = cardWidth * 0.75;
+  
+  // Oval radius dimensions
+  const radiusX = screenWidth * 0.38; // Horizontal radius
+  const radiusY = screenHeight * 0.5; // Vertical radius (flattened for perspective)
   
   const fontSize = {
     sm: Math.max(10, 12 * scale),
@@ -181,6 +186,33 @@ export default function LearningScreen({ navigation }) {
     };
   }, []);
 
+  // Auto-rotate effect - rotates every 3 seconds when not playing
+  useEffect(() => {
+    if (!isPlaying) {
+      autoRotateTimer.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % TOTAL_ITEMS);
+      }, AUTO_ROTATE_INTERVAL);
+    }
+
+    return () => {
+      if (autoRotateTimer.current) {
+        clearInterval(autoRotateTimer.current);
+      }
+    };
+  }, [isPlaying]);
+
+  // Reset auto-rotate timer on manual navigation
+  const resetAutoRotate = () => {
+    if (autoRotateTimer.current) {
+      clearInterval(autoRotateTimer.current);
+    }
+    if (!isPlaying) {
+      autoRotateTimer.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % TOTAL_ITEMS);
+      }, AUTO_ROTATE_INTERVAL);
+    }
+  };
+
   // Pan responder for swipe gestures
   const panResponder = useRef(
     PanResponder.create({
@@ -207,10 +239,17 @@ export default function LearningScreen({ navigation }) {
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % TOTAL_ITEMS);
+    resetAutoRotate();
   };
 
   const goToPrev = () => {
     setCurrentIndex((prev) => (prev - 1 + TOTAL_ITEMS) % TOTAL_ITEMS);
+    resetAutoRotate();
+  };
+
+  const goToIndex = (index) => {
+    setCurrentIndex(index);
+    resetAutoRotate();
   };
 
   return (
@@ -237,18 +276,22 @@ export default function LearningScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* Header */}
-      <View style={[styles.header, { marginTop: spacing.md }]}>
-        <Text style={[styles.title, { fontSize: fontSize.xxl }]}>📚 Learning Hub</Text>
-        <Text style={[styles.subtitle, { fontSize: fontSize.md, marginTop: spacing.xs }]}>
-          Swipe to explore video lessons
+      <View style={[styles.header, { marginTop: spacing.sm }]}>
+        <Text style={[styles.title, { fontSize: fontSize.xl }]}>📚 Learning Hub</Text>
+        <Text style={[styles.subtitle, { fontSize: fontSize.sm, marginTop: spacing.xs }]}>
+          Swipe to explore • Auto-rotating every 3s
         </Text>
       </View>
 
-      {/* 3D Carousel */}
+      {/* 3D Oval Carousel */}
       <View 
-        style={[styles.carouselContainer, { height: cardHeight + 60 }]}
+        style={[styles.carouselContainer, { height: cardHeight + radiusY * 0.4 }]}
         {...panResponder.panHandlers}
       >
+        {/* Oval ring track (decorative) */}
+        <OvalRingTrack radiusX={radiusX} radiusY={radiusY} screenWidth={screenWidth} />
+        
+        {/* Carousel Items - render back items first, front items last */}
         {CAROUSEL_ITEMS.map((item, index) => (
           <CarouselItem
             key={item.id}
@@ -258,30 +301,60 @@ export default function LearningScreen({ navigation }) {
             cardWidth={cardWidth}
             cardHeight={cardHeight}
             screenWidth={screenWidth}
+            radiusX={radiusX}
+            radiusY={radiusY}
           />
         ))}
       </View>
 
-      {/* Navigation arrows */}
-      <View style={styles.navContainer}>
+      {/* Navigation arrows and controls */}
+      <View style={[styles.navContainer, { marginBottom: spacing.xs }]}>
         <TouchableOpacity
-          style={[styles.navButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}
+          style={[styles.navButton, { 
+            width: buttonSize * 1.2, 
+            height: buttonSize * 1.2, 
+            borderRadius: buttonSize * 0.6 
+          }]}
           onPress={goToPrev}
           activeOpacity={0.7}
         >
-          <Text style={[styles.navIcon, { fontSize: fontSize.lg }]}>‹</Text>
+          <Text style={[styles.navIcon, { fontSize: fontSize.xl }]}>◀</Text>
         </TouchableOpacity>
 
-        {/* Dots indicator */}
+        {/* Center info section - numerical indicator */}
+        <View style={styles.centerInfo}>
+          <Text style={[styles.currentNumber, { fontSize: fontSize.md }]}>
+            {currentIndex + 1} / {TOTAL_ITEMS}
+          </Text>
+          <Text style={[styles.currentTitle, { fontSize: fontSize.sm }]} numberOfLines={1}>
+            {CAROUSEL_ITEMS[currentIndex].title}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.navButton, { 
+            width: buttonSize * 1.2, 
+            height: buttonSize * 1.2, 
+            borderRadius: buttonSize * 0.6 
+          }]}
+          onPress={goToNext}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.navIcon, { fontSize: fontSize.xl }]}>▶</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Dots indicator - separate row */}
+      <View style={[styles.dotsRow, { marginBottom: spacing.md }]}>
         <View style={[styles.dotsContainer, { gap: spacing.xs }]}>
           {CAROUSEL_ITEMS.map((_, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => setCurrentIndex(index)}
+              onPress={() => goToIndex(index)}
               style={[
                 styles.dot,
                 {
-                  width: currentIndex === index ? 24 * scale : 8 * scale,
+                  width: currentIndex === index ? 20 * scale : 8 * scale,
                   height: 8 * scale,
                   borderRadius: 4 * scale,
                 },
@@ -290,24 +363,6 @@ export default function LearningScreen({ navigation }) {
             />
           ))}
         </View>
-
-        <TouchableOpacity
-          style={[styles.navButton, { width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}
-          onPress={goToNext}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.navIcon, { fontSize: fontSize.lg }]}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Current video info */}
-      <View style={[styles.currentInfo, { bottom: spacing.md }]}>
-        <Text style={[styles.currentNumber, { fontSize: fontSize.sm }]}>
-          {currentIndex + 1} / {TOTAL_ITEMS}
-        </Text>
-        <Text style={[styles.currentTitle, { fontSize: fontSize.md }]}>
-          {CAROUSEL_ITEMS[currentIndex].title}
-        </Text>
       </View>
     </View>
   );
@@ -366,7 +421,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    position: 'relative',
+  },
+  ovalTrack: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderStyle: 'dashed',
   },
   carouselItem: {
     justifyContent: 'center',
@@ -384,6 +446,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   cardGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -394,9 +458,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -406,19 +470,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   playIcon: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#333',
-    marginLeft: 4,
+    marginLeft: 3,
   },
   videoInfo: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
+    bottom: 10,
+    left: 10,
+    right: 10,
   },
   videoTitle: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
@@ -426,15 +490,15 @@ const styles = StyleSheet.create({
   },
   durationBadge: {
     backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
     alignSelf: 'flex-start',
-    marginTop: 6,
+    marginTop: 4,
   },
   durationText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 10,
   },
   reflection: {
     position: 'absolute',
@@ -448,21 +512,35 @@ const styles = StyleSheet.create({
   },
   navContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    gap: 20,
+    paddingHorizontal: 30,
+  },
+  centerInfo: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   navButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255, 107, 157, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 107, 157, 0.5)',
+    shadowColor: '#ff6b9d',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 5,
   },
   navIcon: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  dotsRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -475,17 +553,16 @@ const styles = StyleSheet.create({
   dotActive: {
     backgroundColor: '#ff6b9d',
   },
-  currentInfo: {
-    position: 'absolute',
-    alignSelf: 'center',
-    alignItems: 'center',
-  },
   currentNumber: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: 'bold',
   },
   currentTitle: {
     color: '#fff',
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 2,
+    maxWidth: 200,
+    textAlign: 'center',
   },
 });
+

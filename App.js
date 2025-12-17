@@ -13,6 +13,13 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import GamingScreen from './src/screens/GamingScreen';
 import LearningScreen from './src/screens/LearningScreen';
 import RankingScreen from './src/screens/RankingScreen';
+import MapZone1Screen from './src/screens/MapZone1Screen';
+import MapZone2Screen from './src/screens/MapZone2Screen';
+import MapZone3Screen from './src/screens/MapZone3Screen';
+import MapZone4Screen from './src/screens/MapZone4Screen';
+import MapZone5Screen from './src/screens/MapZone5Screen';
+import MapZone6Screen from './src/screens/MapZone6Screen';
+import MapZone7Screen from './src/screens/MapZone7Screen';
 
 const Stack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -27,6 +34,13 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="Gaming" component={GamingScreen} />
       <HomeStack.Screen name="Learning" component={LearningScreen} />
       <HomeStack.Screen name="Ranking" component={RankingScreen} />
+      <HomeStack.Screen name="MapZone1" component={MapZone1Screen} />
+      <HomeStack.Screen name="MapZone2" component={MapZone2Screen} />
+      <HomeStack.Screen name="MapZone3" component={MapZone3Screen} />
+      <HomeStack.Screen name="MapZone4" component={MapZone4Screen} />
+      <HomeStack.Screen name="MapZone5" component={MapZone5Screen} />
+      <HomeStack.Screen name="MapZone6" component={MapZone6Screen} />
+      <HomeStack.Screen name="MapZone7" component={MapZone7Screen} />
     </HomeStack.Navigator>
   );
 }

@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  ScrollView,
   StatusBar,
+  ImageBackground,
 } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, {
@@ -14,81 +14,163 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
-  withDelay,
   withSequence,
+  withDelay,
   Easing,
 } from 'react-native-reanimated';
 
-// Animated rank badge
-const RankBadge = ({ rank, name, score, delay, isTop, scale, fontSize, spacing }) => {
+// Map zones configuration - 7 different partitions
+const MAP_ZONES = [
+  { 
+    id: 1, 
+    name: 'Earth', 
+    emoji: '🌍',
+    route: 'MapZone1',
+    color: '#4CAF50',
+    glowColor: 'rgba(76, 175, 80, 0.8)',
+    position: { top: '15%', left: '8%' },
+    size: { width: 100, height: 80 },
+  },
+  { 
+    id: 2, 
+    name: 'Moon', 
+    emoji: '🌙',
+    route: 'MapZone2',
+    color: '#9E9E9E',
+    glowColor: 'rgba(158, 158, 158, 0.8)',
+    position: { top: '8%', left: '25%' },
+    size: { width: 85, height: 70 },
+  },
+  { 
+    id: 3, 
+    name: 'Mars', 
+    emoji: '🔴',
+    route: 'MapZone3',
+    color: '#FF5722',
+    glowColor: 'rgba(255, 87, 34, 0.8)',
+    position: { top: '30%', left: '38%' },
+    size: { width: 110, height: 90 },
+  },
+  { 
+    id: 4, 
+    name: 'Asteroid Belt', 
+    emoji: '⭐',
+    route: 'MapZone4',
+    color: '#795548',
+    glowColor: 'rgba(121, 85, 72, 0.8)',
+    position: { top: '55%', left: '20%' },
+    size: { width: 130, height: 60 },
+  },
+  { 
+    id: 5, 
+    name: 'Jupiter', 
+    emoji: '🪐',
+    route: 'MapZone5',
+    color: '#FF9800',
+    glowColor: 'rgba(255, 152, 0, 0.8)',
+    position: { top: '12%', left: '58%' },
+    size: { width: 120, height: 100 },
+  },
+  { 
+    id: 6, 
+    name: 'Saturn', 
+    emoji: '💫',
+    route: 'MapZone6',
+    color: '#FFC107',
+    glowColor: 'rgba(255, 193, 7, 0.8)',
+    position: { top: '45%', left: '68%' },
+    size: { width: 115, height: 85 },
+  },
+  { 
+    id: 7, 
+    name: 'Deep Space', 
+    emoji: '🌌',
+    route: 'MapZone7',
+    color: '#673AB7',
+    glowColor: 'rgba(103, 58, 183, 0.8)',
+    position: { top: '20%', left: '82%' },
+    size: { width: 95, height: 95 },
+  },
+];
+
+// Animated Zone Partition Component
+const ZonePartition = ({ zone, delay, onPress, scale }) => {
+  const glowAnim = useSharedValue(0);
   const scaleAnim = useSharedValue(0);
-  const shine = useSharedValue(0);
+  const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
     scaleAnim.value = withDelay(
       delay,
       withTiming(1, { duration: 600, easing: Easing.out(Easing.back) })
     );
-    
-    if (isTop) {
-      shine.value = withDelay(
-        delay + 600,
-        withRepeat(
-          withSequence(
-            withTiming(1, { duration: 1500 }),
-            withTiming(0, { duration: 1500 })
-          ),
-          -1,
-          false
-        )
-      );
-    }
+
+    glowAnim.value = withDelay(
+      delay + 300,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      )
+    );
+
+    pulseAnim.value = withDelay(
+      delay + 500,
+      withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      )
+    );
   }, []);
 
-  const badgeStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleAnim.value }],
+  const containerStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value * pulseAnim.value }],
+    opacity: scaleAnim.value,
   }));
 
-  const shineStyle = useAnimatedStyle(() => ({
-    opacity: shine.value * 0.5,
+  const glowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: 0.5 + glowAnim.value * 0.5,
+    borderColor: zone.glowColor,
+    borderWidth: 2 + glowAnim.value * 2,
   }));
 
-  const getMedalEmoji = () => {
-    switch (rank) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      default: return '🏅';
-    }
-  };
+  const innerGlowStyle = useAnimatedStyle(() => ({
+    opacity: 0.3 + glowAnim.value * 0.4,
+  }));
 
-  const getBgColor = () => {
-    switch (rank) {
-      case 1: return 'rgba(255, 215, 0, 0.2)';
-      case 2: return 'rgba(192, 192, 192, 0.2)';
-      case 3: return 'rgba(205, 127, 50, 0.2)';
-      default: return 'rgba(255, 255, 255, 0.1)';
-    }
-  };
+  const zoneWidth = zone.size.width * scale;
+  const zoneHeight = zone.size.height * scale;
 
   return (
-    <Animated.View style={[
-      styles.rankBadge, 
-      { 
-        backgroundColor: getBgColor(),
-        padding: spacing.sm,
-        borderRadius: spacing.sm,
-        marginBottom: spacing.xs,
-      }, 
-      badgeStyle
-    ]}>
-      {isTop && <Animated.View style={[styles.shineEffect, shineStyle]} />}
-      <Text style={[styles.rankNumber, { fontSize: fontSize.md, minWidth: fontSize.xl * 1.5 }]}>#{rank}</Text>
-      <Text style={{ fontSize: fontSize.lg }}>{getMedalEmoji()}</Text>
-      <View style={[styles.rankInfo, { marginLeft: spacing.sm }]}>
-        <Text style={[styles.rankName, { fontSize: fontSize.md }]}>{name}</Text>
-        <Text style={[styles.rankScore, { fontSize: fontSize.sm }]}>{score.toLocaleString()} pts</Text>
-      </View>
+    <Animated.View
+      style={[
+        styles.zoneContainer,
+        { top: zone.position.top, left: zone.position.left, width: zoneWidth, height: zoneHeight },
+        containerStyle,
+      ]}
+    >
+      <TouchableOpacity style={styles.zoneTouchable} onPress={() => onPress(zone)} activeOpacity={0.8}>
+        <Animated.View
+          style={[
+            styles.zonePartition,
+            { backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: Math.min(zoneWidth, zoneHeight) * 0.2, shadowColor: zone.color, shadowRadius: 15 },
+            glowStyle,
+          ]}
+        >
+          <Animated.View
+            style={[styles.innerGlow, { backgroundColor: zone.color, borderRadius: Math.min(zoneWidth, zoneHeight) * 0.2 }, innerGlowStyle]}
+          />
+          <Text style={[styles.zoneEmoji, { fontSize: Math.min(zoneWidth, zoneHeight) * 0.35 }]}>{zone.emoji}</Text>
+          <Text style={[styles.zoneName, { fontSize: Math.max(10, 12 * scale) }]} numberOfLines={1}>{zone.name}</Text>
+        </Animated.View>
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -125,66 +207,18 @@ export default function RankingScreen({ navigation }) {
     };
   }, []);
 
-  // Mock leaderboard data
-  const leaderboardData = [
-    { rank: 1, name: 'CosmicKing', score: 125000 },
-    { rank: 2, name: 'StarGazer', score: 98500 },
-    { rank: 3, name: 'NebulaMaster', score: 87200 },
-    { rank: 4, name: 'GalaxyRider', score: 72100 },
-    { rank: 5, name: 'SpacePilot', score: 65800 },
-  ];
-
-  // Dynamic circle sizes
-  const circleSize1 = Math.min(350, screenWidth * 0.45);
-  const circleSize2 = Math.min(300, screenWidth * 0.4);
-  const circleSize3 = Math.min(200, screenWidth * 0.25);
+  const handleZonePress = (zone) => {
+    navigation.navigate(zone.route);
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Background effects */}
-      <View style={styles.bgEffects}>
-        <View style={[styles.bgCircle, {
-          width: circleSize1,
-          height: circleSize1,
-          top: -circleSize1 * 0.3,
-          right: -circleSize1 * 0.15,
-          backgroundColor: '#ffd700',
-          borderRadius: circleSize1 / 2,
-        }]} />
-        <View style={[styles.bgCircle, {
-          width: circleSize2,
-          height: circleSize2,
-          bottom: -circleSize2 * 0.3,
-          left: -circleSize2 * 0.15,
-          backgroundColor: '#9933ff',
-          borderRadius: circleSize2 / 2,
-        }]} />
-        <View style={[styles.bgCircle, {
-          width: circleSize3,
-          height: circleSize3,
-          top: '50%',
-          left: '40%',
-          backgroundColor: '#00d4ff',
-          borderRadius: circleSize3 / 2,
-        }]} />
-      </View>
-
-      {/* Floating stars */}
-      {[...Array(20)].map((_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.bgStar,
-            {
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: Math.random() * 3 + 1,
-              height: Math.random() * 3 + 1,
-              opacity: Math.random() * 0.5 + 0.3,
-            },
-          ]}
-        />
-      ))}
+    <ImageBackground
+      source={require('../images/map.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      {/* Dark overlay for better visibility */}
+      <View style={styles.overlay} />
 
       {/* Back Button */}
       <TouchableOpacity
@@ -203,61 +237,36 @@ export default function RankingScreen({ navigation }) {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: spacing.md }]}>
-        <Text style={[styles.title, { fontSize: fontSize.xxl }]}>🏆 Cosmic Leaderboard</Text>
-        <Text style={[styles.subtitle, { fontSize: fontSize.md, marginTop: spacing.xs }]}>Top Space Explorers</Text>
+        <Text style={[styles.title, { fontSize: fontSize.xxl }]}>🗺️ Cosmic Map</Text>
+        <Text style={[styles.subtitle, { fontSize: fontSize.md, marginTop: spacing.xs }]}>
+          Tap a zone to explore
+        </Text>
       </View>
 
-      {/* Main content */}
-      <View style={styles.content}>
-        {/* Leaderboard */}
-        <ScrollView 
-          style={[styles.leaderboard, { maxWidth: screenWidth * 0.5 }]} 
-          contentContainerStyle={{ paddingHorizontal: spacing.md }}
-          showsVerticalScrollIndicator={false}
-        >
-          {leaderboardData.map((player, index) => (
-            <RankBadge
-              key={player.rank}
-              {...player}
-              delay={index * 150}
-              isTop={player.rank <= 3}
-              scale={scale}
-              fontSize={fontSize}
-              spacing={spacing}
-            />
-          ))}
-        </ScrollView>
-
-        {/* Your rank */}
-        <View style={[styles.yourRankContainer, { 
-          padding: spacing.lg, 
-          borderRadius: spacing.md,
-          marginLeft: spacing.lg,
-          minWidth: Math.max(150, 200 * scale),
-        }]}>
-          <Text style={[styles.yourRankTitle, { fontSize: fontSize.lg, marginBottom: spacing.sm }]}>Your Rank</Text>
-          <View style={[styles.yourRankBadge, { 
-            padding: spacing.md, 
-            borderRadius: spacing.sm,
-            marginBottom: spacing.sm,
-          }]}>
-            <Text style={[styles.yourRankNumber, { fontSize: fontSize.xxl }]}>#42</Text>
-            <Text style={[styles.yourRankScore, { fontSize: fontSize.md, marginTop: spacing.xs }]}>24,500 pts</Text>
-          </View>
-          <Text style={[styles.yourRankHint, { fontSize: fontSize.sm }]}>Keep playing to climb up! 🚀</Text>
-        </View>
+      {/* Map Zones */}
+      <View style={styles.mapContainer}>
+        {MAP_ZONES.map((zone, index) => (
+          <ZonePartition
+            key={zone.id}
+            zone={zone}
+            delay={index * 150}
+            onPress={handleZonePress}
+            scale={scale}
+          />
+        ))}
       </View>
 
-      {/* Coming soon badge */}
-      <View style={[styles.comingSoonBadge, { 
+      {/* Legend */}
+      <View style={[styles.legend, { 
         bottom: spacing.md, 
-        paddingVertical: spacing.xs, 
-        paddingHorizontal: spacing.md,
-        borderRadius: spacing.xl,
+        right: spacing.md,
+        padding: spacing.sm,
+        borderRadius: spacing.sm,
       }]}>
-        <Text style={[styles.comingSoonText, { fontSize: fontSize.sm }]}>🎮 Play more to earn points!</Text>
+        <Text style={[styles.legendTitle, { fontSize: fontSize.sm }]}>Zones: {MAP_ZONES.length}</Text>
+        <Text style={[styles.legendHint, { fontSize: fontSize.xs }]}>Tap to explore!</Text>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -266,26 +275,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f0f23',
   },
-  bgEffects: {
+  overlay: {
     ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  bgCircle: {
-    position: 'absolute',
-    opacity: 0.3,
-  },
-  bgStar: {
-    position: 'absolute',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   backButton: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   backIcon: {
@@ -299,85 +299,64 @@ const styles = StyleSheet.create({
   title: {
     color: '#fff',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  content: {
+  mapContainer: {
     flex: 1,
-    flexDirection: 'row',
+    position: 'relative',
+  },
+  zoneContainer: {
+    position: 'absolute',
+  },
+  zoneTouchable: {
+    flex: 1,
+  },
+  zonePartition: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  innerGlow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  zoneEmoji: {
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  zoneName: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginTop: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    textAlign: 'center',
+  },
+  legend: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     zIndex: 10,
   },
-  leaderboard: {
-    maxHeight: '80%',
-  },
-  rankBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  shineEffect: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff',
-  },
-  rankNumber: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: 'bold',
-  },
-  rankInfo: {
-    flex: 1,
-  },
-  rankName: {
+  legendTitle: {
     color: '#fff',
     fontWeight: 'bold',
   },
-  rankScore: {
+  legendHint: {
     color: 'rgba(255, 255, 255, 0.6)',
-  },
-  yourRankContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-  },
-  yourRankTitle: {
-    color: '#ffd700',
-    fontWeight: 'bold',
-  },
-  yourRankBadge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.4)',
-  },
-  yourRankNumber: {
-    color: '#ffd700',
-    fontWeight: 'bold',
-  },
-  yourRankScore: {
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  yourRankHint: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    textAlign: 'center',
-  },
-  comingSoonBadge: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    zIndex: 10,
-  },
-  comingSoonText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
   },
 });
