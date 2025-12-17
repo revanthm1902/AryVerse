@@ -17,8 +17,8 @@ export default function MapZone7Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>🌌 Zone 7 - Deep Space</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>☀️ Sunrise Point</Text>
+      <Text style={styles.subtitle}>Where dawn breaks • Coming Soon...</Text>
     </View>
   );
 }

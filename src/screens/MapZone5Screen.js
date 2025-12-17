@@ -17,8 +17,8 @@ export default function MapZone5Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>🪐 Zone 5 - Jupiter</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>🏜️ Middle East</Text>
+      <Text style={styles.subtitle}>Ancient mysteries await • Coming Soon...</Text>
     </View>
   );
 }

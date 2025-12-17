@@ -17,8 +17,8 @@ export default function MapZone1Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>🌍 Zone 1 - Earth</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>🌍 North America</Text>
+      <Text style={styles.subtitle}>Explore the Americas • Coming Soon...</Text>
     </View>
   );
 }

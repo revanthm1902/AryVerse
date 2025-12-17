@@ -17,8 +17,8 @@ export default function MapZone2Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>🌙 Zone 2 - Moon</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>� Atlantic Ocean</Text>
+      <Text style={styles.subtitle}>Discover the deep seas • Coming Soon...</Text>
     </View>
   );
 }

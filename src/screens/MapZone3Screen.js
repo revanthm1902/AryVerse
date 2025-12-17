@@ -17,8 +17,8 @@ export default function MapZone3Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>🔴 Zone 3 - Mars</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>🏰 Europe</Text>
+      <Text style={styles.subtitle}>Explore European wonders • Coming Soon...</Text>
     </View>
   );
 }

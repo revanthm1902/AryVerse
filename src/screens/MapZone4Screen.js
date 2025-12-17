@@ -17,8 +17,8 @@ export default function MapZone4Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>⭐ Zone 4 - Asteroid Belt</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>🦁 Africa</Text>
+      <Text style={styles.subtitle}>Safari adventures await • Coming Soon...</Text>
     </View>
   );
 }

@@ -17,8 +17,8 @@ export default function MapZone6Screen({ navigation }) {
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>💫 Zone 6 - Saturn</Text>
-      <Text style={styles.subtitle}>Coming Soon...</Text>
+      <Text style={styles.title}>🏯 Asia</Text>
+      <Text style={styles.subtitle}>Discover the East • Coming Soon...</Text>
     </View>
   );
 }

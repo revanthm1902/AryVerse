@@ -16,160 +16,148 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
-  Easing,
 } from 'react-native-reanimated';
 
-// Map zones configuration - 7 different partitions
-const MAP_ZONES = [
+// Map pins configuration - 7 pins positioned along Earth's curved horizon
+const MAP_PINS = [
   { 
     id: 1, 
-    name: 'Earth', 
-    emoji: '🌍',
     route: 'MapZone1',
-    color: '#4CAF50',
-    glowColor: 'rgba(76, 175, 80, 0.8)',
-    position: { top: '15%', left: '8%' },
-    size: { width: 100, height: 80 },
+    color: '#00E5FF',
+    glowColor: '#00E5FF',
+    // Far left of the curve
+    position: { top: '78%', left: '5%' },
   },
   { 
     id: 2, 
-    name: 'Moon', 
-    emoji: '🌙',
     route: 'MapZone2',
-    color: '#9E9E9E',
-    glowColor: 'rgba(158, 158, 158, 0.8)',
-    position: { top: '8%', left: '25%' },
-    size: { width: 85, height: 70 },
+    color: '#7C4DFF',
+    glowColor: '#7C4DFF',
+    // Lower left curve
+    position: { top: '72%', left: '18%' },
   },
   { 
     id: 3, 
-    name: 'Mars', 
-    emoji: '🔴',
     route: 'MapZone3',
-    color: '#FF5722',
-    glowColor: 'rgba(255, 87, 34, 0.8)',
-    position: { top: '30%', left: '38%' },
-    size: { width: 110, height: 90 },
+    color: '#FF4081',
+    glowColor: '#FF4081',
+    // Rising towards sunrise
+    position: { top: '62%', left: '30%' },
   },
   { 
     id: 4, 
-    name: 'Asteroid Belt', 
-    emoji: '⭐',
     route: 'MapZone4',
-    color: '#795548',
-    glowColor: 'rgba(121, 85, 72, 0.8)',
-    position: { top: '55%', left: '20%' },
-    size: { width: 130, height: 60 },
+    color: '#FFD740',
+    glowColor: '#FFD740',
+    // Near the sunrise glow
+    position: { top: '48%', left: '42%' },
   },
   { 
     id: 5, 
-    name: 'Jupiter', 
-    emoji: '🪐',
     route: 'MapZone5',
-    color: '#FF9800',
-    glowColor: 'rgba(255, 152, 0, 0.8)',
-    position: { top: '12%', left: '58%' },
-    size: { width: 120, height: 100 },
+    color: '#FF6E40',
+    glowColor: '#FF6E40',
+    // Right of sunrise
+    position: { top: '52%', left: '58%' },
   },
   { 
     id: 6, 
-    name: 'Saturn', 
-    emoji: '💫',
     route: 'MapZone6',
-    color: '#FFC107',
-    glowColor: 'rgba(255, 193, 7, 0.8)',
-    position: { top: '45%', left: '68%' },
-    size: { width: 115, height: 85 },
+    color: '#69F0AE',
+    glowColor: '#69F0AE',
+    // Upper right curve
+    position: { top: '60%', left: '74%' },
   },
   { 
     id: 7, 
-    name: 'Deep Space', 
-    emoji: '🌌',
     route: 'MapZone7',
-    color: '#673AB7',
-    glowColor: 'rgba(103, 58, 183, 0.8)',
-    position: { top: '20%', left: '82%' },
-    size: { width: 95, height: 95 },
+    color: '#40C4FF',
+    glowColor: '#40C4FF',
+    // Far right of the curve
+    position: { top: '70%', left: '88%' },
   },
 ];
 
-// Animated Zone Partition Component
-const ZonePartition = ({ zone, delay, onPress, scale }) => {
-  const glowAnim = useSharedValue(0);
+// Animated Map Pin Component - Minimal Design
+const MapPin = ({ pin, delay, onPress, scale }) => {
   const scaleAnim = useSharedValue(0);
-  const pulseAnim = useSharedValue(1);
+  const pulseAnim = useSharedValue(0);
 
   useEffect(() => {
+    // Entry animation
     scaleAnim.value = withDelay(
       delay,
-      withTiming(1, { duration: 600, easing: Easing.out(Easing.back) })
-    );
-
-    glowAnim.value = withDelay(
-      delay + 300,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        false
+      withSequence(
+        withTiming(1.15, { duration: 250 }),
+        withTiming(1, { duration: 150 })
       )
     );
 
+    // Subtle pulse
     pulseAnim.value = withDelay(
-      delay + 500,
+      delay + 300,
       withRepeat(
         withSequence(
-          withTiming(1.05, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+          withTiming(1, { duration: 1500 }),
+          withTiming(0.5, { duration: 1500 })
         ),
         -1,
-        false
+        true
       )
     );
   }, []);
 
   const containerStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleAnim.value * pulseAnim.value }],
+    transform: [{ scale: scaleAnim.value }],
     opacity: scaleAnim.value,
   }));
 
-  const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: 0.5 + glowAnim.value * 0.5,
-    borderColor: zone.glowColor,
-    borderWidth: 2 + glowAnim.value * 2,
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: 0.3 + pulseAnim.value * 0.4,
   }));
 
-  const innerGlowStyle = useAnimatedStyle(() => ({
-    opacity: 0.3 + glowAnim.value * 0.4,
-  }));
-
-  const zoneWidth = zone.size.width * scale;
-  const zoneHeight = zone.size.height * scale;
+  const pinSize = Math.max(12, 14 * scale);
 
   return (
     <Animated.View
       style={[
-        styles.zoneContainer,
-        { top: zone.position.top, left: zone.position.left, width: zoneWidth, height: zoneHeight },
+        styles.pinContainer,
+        { top: pin.position.top, left: pin.position.left },
         containerStyle,
       ]}
     >
-      <TouchableOpacity style={styles.zoneTouchable} onPress={() => onPress(zone)} activeOpacity={0.8}>
+      <TouchableOpacity 
+        style={styles.pinTouchable} 
+        onPress={() => onPress(pin)} 
+        activeOpacity={0.7}
+      >
+        {/* Subtle outer ring */}
         <Animated.View
           style={[
-            styles.zonePartition,
-            { backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: Math.min(zoneWidth, zoneHeight) * 0.2, shadowColor: zone.color, shadowRadius: 15 },
-            glowStyle,
+            styles.outerRing,
+            {
+              width: pinSize * 2.2,
+              height: pinSize * 2.2,
+              borderRadius: pinSize * 1.1,
+              borderColor: pin.color,
+            },
+            ringStyle,
           ]}
-        >
-          <Animated.View
-            style={[styles.innerGlow, { backgroundColor: zone.color, borderRadius: Math.min(zoneWidth, zoneHeight) * 0.2 }, innerGlowStyle]}
-          />
-          <Text style={[styles.zoneEmoji, { fontSize: Math.min(zoneWidth, zoneHeight) * 0.35 }]}>{zone.emoji}</Text>
-          <Text style={[styles.zoneName, { fontSize: Math.max(10, 12 * scale) }]} numberOfLines={1}>{zone.name}</Text>
-        </Animated.View>
+        />
+        
+        {/* Main dot */}
+        <View style={[styles.pinDot, { 
+          width: pinSize, 
+          height: pinSize, 
+          borderRadius: pinSize / 2,
+          backgroundColor: pin.color,
+        }]}>
+          <View style={[styles.pinShine, {
+            width: pinSize * 0.35,
+            height: pinSize * 0.35,
+            borderRadius: pinSize * 0.175,
+          }]} />
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -207,8 +195,8 @@ export default function RankingScreen({ navigation }) {
     };
   }, []);
 
-  const handleZonePress = (zone) => {
-    navigation.navigate(zone.route);
+  const handlePinPress = (pin) => {
+    navigation.navigate(pin.route);
   };
 
   return (
@@ -217,54 +205,39 @@ export default function RankingScreen({ navigation }) {
       style={styles.container}
       resizeMode="cover"
     >
-      {/* Dark overlay for better visibility */}
+      {/* Subtle overlay for better pin visibility */}
       <View style={styles.overlay} />
 
-      {/* Back Button */}
-      <TouchableOpacity
-        style={[styles.backButton, {
-          top: spacing.md,
-          left: spacing.md,
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-        }]}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.backIcon, { fontSize: fontSize.xl }]}>←</Text>
-      </TouchableOpacity>
-
       {/* Header */}
-      <View style={[styles.header, { paddingTop: spacing.md }]}>
-        <Text style={[styles.title, { fontSize: fontSize.xxl }]}>🗺️ Cosmic Map</Text>
-        <Text style={[styles.subtitle, { fontSize: fontSize.md, marginTop: spacing.xs }]}>
-          Tap a zone to explore
-        </Text>
+      <View style={[styles.header, { paddingTop: spacing.sm, paddingHorizontal: spacing.md }]}>
+        <TouchableOpacity
+          style={[styles.backButton, {
+            width: buttonSize * 0.75,
+            height: buttonSize * 0.75,
+            borderRadius: buttonSize * 0.375,
+          }]}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.backIcon, { fontSize: fontSize.md }]}>←</Text>
+        </TouchableOpacity>
+        
+        <Text style={[styles.title, { fontSize: fontSize.lg }]}>Explore Zones</Text>
+        
+        <View style={{ width: buttonSize * 0.75 }} />
       </View>
 
-      {/* Map Zones */}
+      {/* Map Pins */}
       <View style={styles.mapContainer}>
-        {MAP_ZONES.map((zone, index) => (
-          <ZonePartition
-            key={zone.id}
-            zone={zone}
+        {MAP_PINS.map((pin, index) => (
+          <MapPin
+            key={pin.id}
+            pin={pin}
             delay={index * 150}
-            onPress={handleZonePress}
+            onPress={handlePinPress}
             scale={scale}
           />
         ))}
-      </View>
-
-      {/* Legend */}
-      <View style={[styles.legend, { 
-        bottom: spacing.md, 
-        right: spacing.md,
-        padding: spacing.sm,
-        borderRadius: spacing.sm,
-      }]}>
-        <Text style={[styles.legendTitle, { fontSize: fontSize.sm }]}>Zones: {MAP_ZONES.length}</Text>
-        <Text style={[styles.legendHint, { fontSize: fontSize.xs }]}>Tap to explore!</Text>
       </View>
     </ImageBackground>
   );
@@ -273,90 +246,67 @@ export default function RankingScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#000',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  backButton: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  backIcon: {
-    color: '#fff',
-    fontWeight: 'bold',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 10,
+    justifyContent: 'space-between',
+    zIndex: 100,
   },
   title: {
     color: '#fff',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
-  },
-  subtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 4,
+  },
+  backButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  backIcon: {
+    color: '#fff',
+    fontWeight: '600',
   },
   mapContainer: {
     flex: 1,
     position: 'relative',
   },
-  zoneContainer: {
+  pinContainer: {
     position: 'absolute',
-  },
-  zoneTouchable: {
-    flex: 1,
-  },
-  zonePartition: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
-    overflow: 'hidden',
+    justifyContent: 'center',
+    marginLeft: -18,
+    marginTop: -18,
+    zIndex: 50,
   },
-  innerGlow: {
-    ...StyleSheet.absoluteFillObject,
+  pinTouchable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
   },
-  zoneEmoji: {
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  zoneName: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginTop: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    textAlign: 'center',
-  },
-  legend: {
+  outerRing: {
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    zIndex: 10,
+    borderWidth: 1.5,
   },
-  legendTitle: {
-    color: '#fff',
-    fontWeight: 'bold',
+  pinDot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
-  legendHint: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginTop: 2,
+  pinShine: {
+    position: 'absolute',
+    top: '15%',
+    left: '15%',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
 });
